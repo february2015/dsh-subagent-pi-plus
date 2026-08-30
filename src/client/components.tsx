@@ -59,6 +59,8 @@ function badgeLabel(view: GatewaySessionView | null): string {
 export function HeaderAction(props: PropsRuntime<'conversation.session.header.actions'>) {
   const { view } = useGatewayView(props.sessionId)
   const panel = usePanelState()
+  // 只在存在绑定（含已保存未连接）时显示标题栏徽标；未绑定的会话不占槽位。
+  if (view?.threadId === undefined) return null
   return (
     <button
       type="button"
@@ -69,9 +71,7 @@ export function HeaderAction(props: PropsRuntime<'conversation.session.header.ac
           : THEME.textTertiary,
         boxShadow: view?.attached ? 'inset 0 0 0 1px ' + dotColor(view) : undefined,
       }}
-      title={view?.threadId !== undefined
-        ? `Pi 直连线程 ${view.threadId}${view.attached ? '（点击打开控制窗）' : '（重启后自动恢复，点击打开控制窗）'}`
-        : '将本会话直连到 Pi（点击打开控制窗）'}
+      title={`Pi 直连线程 ${view.threadId}${view.attached ? '（点击打开控制窗）' : '（重启后自动恢复，点击打开控制窗）'}`}
       onClick={() => togglePanel(!panel.open)}
     >
       <span

@@ -49,7 +49,7 @@ Pi 的执行过程以近实时方式转发进 dsh 会话流：agent 消息增量
 
 ### 4. 官方槽位状态 + 悬浮窗控制
 
-- **状态显示**用官方槽位：`conversation.session.header` 直连徽标（`PI-xxxx`，彩色绑定状态点 + 前四位 session id）、`conversation.composer.dock` 状态条、`conversation.input.dock` 排队列表。
+- **状态显示**用官方槽位：`conversation.session.header` 直连徽标（`PI-xxxx`，彩色绑定状态点 + 前四位 session id）、`conversation.composer.dock` 状态条、`conversation.input.dock` 排队列表。徽标**仅在会话存在绑定后显示**（未绑定不占标题栏空间）。
 - **选择/控制**放在悬浮窗（dsh-pet 模式，`shell.overlay`）：队列操作、steer/插入、解绑信息。
 
 ### 5. 图片/附件透传（Q3）
@@ -75,7 +75,7 @@ dsh --profile <name>
 ### 使用
 
 1. 在 dsh 里打开任意会话（cwd 为工作项目）。
-2. 输入 `/pi-lock`：会话头部出现 `PI-xxxx` 徽标 + "Pi 直连 · …" 状态条，此后输入直接进入 Pi。
+2. 输入 `/pi-lock`：绑定成功后会话头部出现 `PI-xxxx` 徽标 + "Pi 直连 · …" 状态条（未绑定的会话不显示徽标），此后输入直接进入 Pi。
 3. Pi 忙时再发消息会自动排队；用悬浮窗可查看队列、置顶/插入/编辑/删除。
 4. `/pi-unlock` 解除直连，Pi 会话保留，之后可 `/pi-lock <piSessionId>` 重新绑定。
 

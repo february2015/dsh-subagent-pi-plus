@@ -49,7 +49,7 @@ Pi's execution progress is forwarded into the dsh session stream in near real ti
 
 ### 4. Official slots for status + floating panel for control
 
-- **Status** uses official dsh slots: `conversation.session.header` direct-connect badge (`PI-xxxx`, colored status dot + first 4 session id chars), `conversation.composer.dock` status bar, `conversation.input.dock` live queue list.
+- **Status** uses official dsh slots: `conversation.session.header` direct-connect badge (`PI-xxxx`, colored status dot + first 4 session id chars), `conversation.composer.dock` status bar, `conversation.input.dock` live queue list. The badge is rendered **only once the session has a binding** (unbound sessions take no header space).
 - **Control** lives in a floating overlay panel (dsh-pet pattern, `shell.overlay`): queue operations, steer/insert, unbind info.
 
 ### 5. Image / attachment passthrough (Q3)
@@ -74,7 +74,7 @@ Prerequisites: `pi` is installed and runnable (`pi --version`), and Pi is config
 ### Usage
 
 1. Open any dsh session (cwd is your project).
-2. Type `/pi-lock`: the header shows a `PI-xxxx` badge and a "Pi 直连 · …" status bar; input now goes straight to Pi.
+2. Type `/pi-lock`: after binding succeeds the header shows a `PI-xxxx` badge and a "Pi 直连 · …" status bar (unbound sessions show no badge); input now goes straight to Pi.
 3. While Pi is busy, further messages queue automatically; use the floating panel to view/promote/insert/edit/delete.
 4. `/pi-unlock` disconnects; the Pi session is kept and can be rebound with `/pi-lock <piSessionId>`.
 
