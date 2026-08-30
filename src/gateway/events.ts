@@ -1,38 +1,37 @@
 /**
- * Codex app-server notification stream → dsh session log (R1-A1).
+ * Pi RPC event stream → dsh session log (R1-A1).
  *
- * Every Codex turn/item/delta is projected onto the dsh session's append-only
- * log as **log-only** events (`turn/start`, `turn/end`, `step/start`,
- * `step/end`, `assistant/chunk`, `tool/call`), which never carry a
- * `surfaceOp` and therefore never enter the model-visible surface (A2).
+ * Every Pi agent/turn/message event is projected onto the dsh session's
+ * append-only log as **log-only** events (`turn/start`, `turn/end`,
+ * `step/start`, `step/end`, `assistant/chunk`, `tool/call`), which never
+ * carry a `surfaceOp` and therefore never enter the model-visible surface
+ * (A2).
  *
  * Two message-producing events DO join the surface (`surfaceOp: 'append'`):
  * the user prompt is recorded by the agent when its turn starts, and on
- * `turn/completed` the streamed deltas are assembled into a durable
+ * `turn_end` the turn's final assistant message is appended as a durable
  * `assistant/message`. Without that durable message the chat fold has no
  * settled node and renders every finished reply as a synthetic interrupted
  * node ("已停止"); with it the reply renders as a normal completed bubble
- * while the session log still preserves the full Codex intermediate
- * transcript for UI, tooling, and replay.
+ * while the session log still preserves the full Pi intermediate transcript.
  *
- * Mapping (verified against a real `codex app-server --stdio` stream, see
- * TECH-VERIFICATION §3.6):
- * - `turn/started` → `turn/start` + `step/start`
- * - `turn/completed` → `step/end` + `turn/end`
- * - `item/reasoning/textDelta` → `assistant/chunk` (`reasoning-delta`)
- * - `item/agentMessage/delta` → `assistant/chunk` (`text-delta`)
- * - `item/started|completed` with a tool item → `tool/call`
+ * Mapping (verified against a real `pi --mode rpc` stream):
+ * - `turn_start` → `turn/start` + `step/start`
+ * - `message_update` (`text_delta`) → `assistant/chunk` (`text-delta`)
+ * - `message_update` (`thinking_delta`) → `assistant/chunk` (`reasoning-delta`)
+ * - `message_update` (`toolcall_end`) → `tool/call`
+ * - `turn_end` → `step/end` + durable `assistant/message` + `turn/end`
  *
- * @module dsh-subagent-codex-plus/gateway/events
+ * @module dsh-subagent-pi/gateway/events
  */
 
 import { createAssistantMessage, type CallId, type ContentBlock, type StreamChunk } from '@deepseek-ai/dsh-llm'
 import type { Session, TurnEndReason } from '@deepseek-ai/dsh-session'
-import type { CodexGatewayNotification } from './wire.ts'
+import type { PiEvent } from './pi-wire.ts'
 
-/** Forwarding policy for the Codex → dsh session event stream. */
+/** Forwarding policy for the Pi → dsh session event stream. */
 export interface GatewayEventForwarderOptions {
-  /** Append Codex turn/step/chunk/tool events to the session log (A1). */
+  /** Append Pi turn/step/chunk/tool events to the session log (A1). */
   readonly enabled: boolean
   /** Forwarding-side diagnostics sink (defaults to no-op). */
   readonly onError?: (message: string) => void
@@ -42,38 +41,27 @@ export const DEFAULT_EVENT_FORWARDER_OPTIONS: GatewayEventForwarderOptions = {
   enabled: true,
 }
 
-/** Item types whose lifecycle carries intermediate work worth logging. */
-type ForwardedItem = 'reasoning' | 'agentMessage' | 'dynamicToolCall' | 'functionCall'
-
-function itemType(value: unknown): ForwardedItem | undefined {
-  if (value === 'reasoning' || value === 'agentMessage') return value
-  if (value === 'dynamicToolCall' || value === 'functionCall') return value
-  return undefined
-}
-
-function readString(value: unknown, label: string): string | undefined {
-  return typeof value === 'string' && value.length > 0 ? value : undefined
-}
-
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
     : undefined
 }
 
-/** Map a Codex turn status onto the dsh `TurnEndReason` vocabulary. */
-function turnEndReason(status: unknown, error: unknown): TurnEndReason {
-  switch (status) {
-    case 'interrupted':
+function readString(value: unknown, label: string): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+/** Map a Pi assistant stop reason onto the dsh `TurnEndReason` vocabulary. */
+function turnEndReason(stopReason: unknown, errorMessage: unknown): TurnEndReason {
+  switch (stopReason) {
+    case 'aborted':
       return { kind: 'aborted', reason: { kind: 'user' } }
-    case 'failed': {
-      const detail = asRecord(error)
+    case 'error': {
+      const message = readString(errorMessage, 'error message')
       return {
         kind: 'error',
         error: {
-          message: typeof detail?.message === 'string' && detail.message.length > 0
-            ? detail.message
-            : 'codex turn failed',
+          message: message ?? 'pi turn failed',
           code: 'UNKNOWN',
         },
       }
@@ -83,25 +71,36 @@ function turnEndReason(status: unknown, error: unknown): TurnEndReason {
   }
 }
 
+/** Extract text/thinking blocks from one Pi assistant message content list. */
+function blocksOfContent(content: unknown): ContentBlock[] {
+  const blocks: ContentBlock[] = []
+  if (!Array.isArray(content)) return blocks
+  for (const entry of content) {
+    const block = asRecord(entry)
+    if (block === undefined) continue
+    if (block.type === 'text') {
+      const text = readString(block.text, 'text')
+      if (text !== undefined && text.length > 0) blocks.push({ type: 'text', text })
+    } else if (block.type === 'thinking') {
+      const text = readString(block.text, 'thinking text')
+      if (text !== undefined && text.length > 0) blocks.push({ type: 'reasoning', text })
+    }
+  }
+  return blocks
+}
+
 /**
- * Project one app-server notification onto the bound dsh session log. Safe to
- * call for every observed notification; unrecognized methods are ignored.
- * Append failures (e.g. a disposed session) are swallowed so the gateway
- * stream never dies from a logging side effect.
+ * Project one Pi RPC event onto the bound dsh session log. Safe to call for
+ * every observed event; unrecognized event types are ignored. Append
+ * failures (e.g. a disposed session) are swallowed so the gateway stream
+ * never dies from a logging side effect.
  */
 export class GatewayEventForwarder {
-  /** dsh turn ordinal for the active Codex turn (1-based). */
+  /** dsh turn ordinal for the active Pi run (1-based). */
   private turn = 0
-  /** dsh step ordinal within the active turn (1; one step per Codex turn). */
+  /** dsh step ordinal within the active turn (1; one step per Pi turn). */
   private step = 0
-  private activeTurnId: string | undefined
   private stepOpen = false
-  /** Reasoning deltas keyed by Codex item id, in first-seen order. */
-  private readonly reasoningByItem = new Map<string, { readonly itemId: string; readonly index: number; text: string }>()
-  private readonly reasoningOrder: string[] = []
-  /** Text deltas keyed by content index (agentMessage deltas carry none). */
-  private readonly textByIndex = new Map<number, string>()
-  private readonly textOrder: number[] = []
 
   constructor(
     private readonly session: Session,
@@ -110,177 +109,135 @@ export class GatewayEventForwarder {
     // `Session.append` is a class method that reads instance state; keep the
     // reference bound so the projection never throws on a detached `this`.
     this.appendBound = session.append.bind(session) as (type: string, data: unknown, opts?: unknown) => unknown
-    // Continue turn numbering across process restarts: the session log is
-    // durable, so a fresh forwarder must pick up after the last recorded turn
-    // instead of renumbering from 1. Duplicate turn ordinals corrupt the
-    // Harness front-end conversation assembler (it rejects a second `start`
-    // match for the same context) and hide the whole conversation.
+    // Continue turn numbering across process restarts: the session event log
+    // is durable, so a fresh forwarder must pick up after the last recorded
+    // gateway turn instead of renumbering from 1. Duplicate turn ordinals
+    // corrupt the Harness front-end conversation assembler (it rejects a
+    // second `start` match for the same context) and hide the whole
+    // conversation.
     this.turn = GatewayEventForwarder.recordedTurnCount(session)
+    if (!this.options.enabled) {
+      this.appendBound = () => undefined
+      this.appendSurfaceBound = () => undefined
+    }
   }
-
-  private readonly appendBound: (type: string, data: unknown, opts?: unknown) => unknown
 
   /** Highest turn ordinal already present in the durable event log (0 when empty). */
   private static recordedTurnCount(session: Session): number {
     let max = 0
-    for (const event of session.events) {
-      const turn = (event.data as { turn?: unknown }).turn
-      if (typeof turn === 'number' && Number.isSafeInteger(turn) && turn > max) max = turn
+    try {
+      for (const event of session.events) {
+        const turn = (event.data as { turn?: unknown }).turn
+        if (typeof turn === 'number' && Number.isSafeInteger(turn) && turn > max) max = turn
+      }
+    } catch {
+      // A disposed or incomplete session log must not block the gateway.
     }
     return max
   }
 
-  forward(notification: CodexGatewayNotification): void {
+  /** Process one event; call with every raw Pi event, oldest first. */
+  forward(event: PiEvent): void {
     if (!this.options.enabled) return
     try {
-      this.dispatch(notification)
+      this.dispatch(event)
     } catch (error: unknown) {
       // Logging must never break the gateway stream; report and continue.
       const message = error instanceof Error ? error.message : String(error)
-      this.options.onError?.(`[gateway-events] dropped notification ${notification.method}: ${message}`)
+      this.options.onError?.(`[gateway-events] dropped event ${event.type}: ${message}`)
     }
   }
 
-  private dispatch(notification: CodexGatewayNotification): void {
-    switch (notification.method) {
-      case 'turn/started':
-        this.onTurnStarted(notification.params)
+  private dispatch(event: PiEvent): void {
+    switch (event.type) {
+      case 'turn_start':
+        this.onTurnStart()
         break
-      case 'turn/completed':
-        this.onTurnCompleted(notification.params)
+      case 'turn_end':
+        this.onTurnEnd(event)
         break
-      case 'item/started':
-        this.onItemStarted(notification.params)
-        break
-      case 'item/agentMessage/delta':
-        this.onTextDelta(notification.params)
-        break
-      case 'item/reasoning/textDelta':
-        this.onReasoningDelta(notification.params)
+      case 'message_update':
+        this.onMessageUpdate(event)
         break
       default:
         break
     }
   }
 
-  private onTurnStarted(params: Record<string, unknown>): void {
-    const turn = asRecord(params.turn)
-    const turnId = readString(turn?.id, 'turn id') ?? `codex-${this.turn + 1}`
-    this.resetAccumulators()
-    // A new active turn begins; if the server reported a second start without
-    // a completion (e.g. resume racing), close the stale projection first.
-    if (this.activeTurnId !== undefined) {
-      this.closeStep()
-      this.append('turn/end', { turn: this.turn, reason: { kind: 'interrupted' } })
-    }
+  private onTurnStart(): void {
     this.turn += 1
     this.step = 1
-    this.activeTurnId = turnId
-    this.stepOpen = false
-    this.append('turn/start', { turn: this.turn })
     this.openStep()
+    this.append('turn/start', { turn: this.turn })
   }
 
-  private onTurnCompleted(params: Record<string, unknown>): void {
-    if (this.activeTurnId === undefined) return
-    const turn = asRecord(params.turn)
+  private onTurnEnd(event: PiEvent): void {
+    const message = asRecord(event.message)
+    const content = message === undefined ? undefined : message.content
     this.closeStep()
     // Settle the durable reply BEFORE closing the turn: the Harness surface
     // folds an `assistant/message` into the turn it belongs to, and a message
     // arriving after `turn/end` renders as an orphan (metadata only, no body).
-    this.appendFinalMessage(turn?.status)
+    this.appendFinalMessage(content, message)
     this.append('turn/end', {
       turn: this.turn,
-      reason: turnEndReason(turn?.status, turn?.error),
+      reason: turnEndReason(message?.stopReason, message?.errorMessage),
     })
-    this.activeTurnId = undefined
-    this.resetAccumulators()
+    this.stepOpen = false
   }
 
-  private onItemStarted(params: Record<string, unknown>): void {
-    const item = asRecord(params.item)
-    if (item === undefined || this.activeTurnId === undefined) return
-    const type = itemType(item.type)
-    if (type === 'dynamicToolCall' || type === 'functionCall') {
-      this.recordToolCall(item)
-    }
-  }
-
-  private onTextDelta(params: Record<string, unknown>): void {
-    const delta = readString(params.delta, 'delta')
-    if (delta === undefined || this.activeTurnId === undefined) return
-    const index = typeof params.contentIndex === 'number' ? params.contentIndex : 0
-    if (!this.textByIndex.has(index)) this.textOrder.push(index)
-    this.textByIndex.set(index, (this.textByIndex.get(index) ?? '') + delta)
-    this.appendChunk({ type: 'text-delta', index, text: delta })
-  }
-
-  private onReasoningDelta(params: Record<string, unknown>): void {
-    const delta = readString(params.delta, 'delta')
-    if (delta === undefined || this.activeTurnId === undefined) return
-    const itemId = readString(params.itemId, 'item id') ?? `reasoning-${this.reasoningOrder.length}`
-    const index = typeof params.contentIndex === 'number' ? params.contentIndex : 0
-    let accumulator = this.reasoningByItem.get(itemId)
-    if (accumulator === undefined) {
-      accumulator = { itemId, index, text: '' }
-      this.reasoningByItem.set(itemId, accumulator)
-      this.reasoningOrder.push(itemId)
-    }
-    accumulator.text += delta
-    this.appendChunk({ type: 'reasoning-delta', index, text: delta })
-  }
-
-  /**
-   * Assemble the streamed deltas into the durable `assistant/message` that
-   * closes the step on the surface. Interrupted turns carry `interrupted`
-   * exactly like a cancelled dsh turn, so the UI marks only genuinely
-   * aborted replies; completed turns settle normally.
-   */
-  private appendFinalMessage(status: unknown): void {
-    const blocks: ContentBlock[] = []
-    for (const itemId of this.reasoningOrder) {
-      const accumulator = this.reasoningByItem.get(itemId)
-      if (accumulator !== undefined && accumulator.text !== '') {
-        blocks.push({ type: 'reasoning', text: accumulator.text })
+  private onMessageUpdate(event: PiEvent): void {
+    if (!this.stepOpen) return
+    const assistant = asRecord(event.assistantMessageEvent)
+    if (assistant === undefined) return
+    switch (assistant.type) {
+      case 'text_delta': {
+        const delta = readString(assistant.delta, 'text delta')
+        if (delta === undefined) return
+        const index = typeof assistant.contentIndex === 'number' ? assistant.contentIndex : 0
+        this.appendChunk({ type: 'text-delta', index, text: delta })
+        break
       }
-    }
-    for (const index of this.textOrder) {
-      const text = this.textByIndex.get(index)
-      if (text !== undefined && text !== '') {
-        blocks.push({ type: 'text', text })
+      case 'thinking_delta': {
+        const delta = readString(assistant.delta, 'thinking delta')
+        if (delta === undefined) return
+        const index = typeof assistant.contentIndex === 'number' ? assistant.contentIndex : 0
+        this.appendChunk({ type: 'reasoning-delta', index, text: delta })
+        break
       }
+      case 'toolcall_end': {
+        const toolCall = asRecord(assistant.toolCall)
+        if (toolCall === undefined) return
+        const rawCallId = readString(toolCall.id, 'tool call id') ?? readString(toolCall.callId, 'tool call id')
+        if (rawCallId === undefined) return
+        const name = readString(toolCall.name, 'tool name') ?? readString(toolCall.tool, 'tool name') ?? 'unknown'
+        const args = toolCall.arguments
+        this.append('tool/call', {
+          turn: this.turn,
+          step: this.step,
+          callId: rawCallId as CallId,
+          name,
+          arguments: typeof args === 'string' ? args : JSON.stringify(args ?? {}),
+        })
+        break
+      }
+      default:
+        break
     }
-    const message = createAssistantMessage({
+  }
+
+  /** Assemble the turn's final assistant message from the authoritative content. */
+  private appendFinalMessage(content: unknown, message: Record<string, unknown> | undefined): void {
+    const blocks = blocksOfContent(content)
+    const dshMessage = createAssistantMessage({
       content: blocks,
-      source: { provider: 'codex', model: 'codex' },
+      source: { provider: 'pi', model: typeof message?.model === 'string' ? message.model : 'pi' },
     })
     this.appendSurface('assistant/message', {
       turn: this.turn,
       step: this.step,
-      message,
-      ...status === 'interrupted' ? { interrupted: true } : {},
-    })
-  }
-
-  private resetAccumulators(): void {
-    this.reasoningByItem.clear()
-    this.reasoningOrder.length = 0
-    this.textByIndex.clear()
-    this.textOrder.length = 0
-  }
-
-  private recordToolCall(item: Record<string, unknown>): void {
-    const rawCallId = readString(item.id, 'item id') ?? readString(item.callId, 'call id')
-    if (rawCallId === undefined) return
-    const callId = rawCallId as CallId
-    const name = readString(item.tool, 'tool name') ?? readString(item.name, 'tool name') ?? 'unknown'
-    const args = item.arguments
-    this.append('tool/call', {
-      turn: this.turn,
-      step: this.step,
-      callId,
-      name,
-      arguments: typeof args === 'string' ? args : JSON.stringify(args ?? {}),
+      message: dshMessage,
+      ...message?.stopReason === 'aborted' ? { interrupted: true } : {},
     })
   }
 
@@ -315,6 +272,13 @@ export class GatewayEventForwarder {
 
   /** Append a message-producing event on the model-visible surface (A2). */
   private appendSurface(type: 'user/message' | 'assistant/message', data: unknown): void {
-    void this.appendBound(type, data, { surfaceOp: 'append' })
+    void this.appendSurfaceBound(type, data, { surfaceOp: 'append' })
   }
+
+  private appendBound: (type: string, data: unknown, opts?: unknown) => unknown
+  private appendSurfaceBound: (type: string, data: unknown, opts?: unknown) => unknown = (
+    type: string,
+    data: unknown,
+    opts?: unknown,
+  ) => this.appendBound(type, data, opts)
 }

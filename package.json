@@ -1,13 +1,13 @@
 {
-  "name": "dsh-subagent-codex-plus",
-  "description": "One-shot Codex subagent provider over the official app-server protocol",
+  "name": "dsh-subagent-pi",
+  "description": "One-shot Pi subagent provider and true-gateway over the Pi RPC protocol",
   "version": "0.1.0",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/robin-codex/dsh-subagent-codex-plus.git"
+    "url": "git+https://github.com/robinwlive/dsh-subagent-pi.git"
   },
   "type": "module",
   "main": "lib/index.js",
@@ -66,8 +66,7 @@
     "@deepseek-ai/dsh-host-webserver": "^0.1.1-rc.2",
     "@deepseek-ai/dsh-scope": "^0.1.1-rc.2",
     "@deepseek-ai/dsh-sdk-protocol": "^0.1.1-rc.2",
-    "@deepseek-ai/schemastery": "^3.18.1-rc.1",
-    "@openai/codex": "0.149.1"
+    "@deepseek-ai/schemastery": "^3.18.1-rc.1"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

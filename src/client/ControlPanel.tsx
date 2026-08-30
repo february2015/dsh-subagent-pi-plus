@@ -1,11 +1,11 @@
 /**
- * Floating info window for the Codex true-gateway, seated in the official
+ * Floating info window for the Pi true-gateway, seated in the official
  * `shell.overlay` layer. Opened from the session-header badge, this window is
  * deliberately informational only: direct-connect state, durable thread /
  * session ids, detach, and interrupt. Queue management (reorder / insert /
  * delete / edit) lives in the queue window above the composer instead.
  *
- * @module dsh-subagent-codex-plus/client/control-panel
+ * @module dsh-subagent-pi/client/control-panel
  */
 
 import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
@@ -152,7 +152,7 @@ export function ControlPanel(props: PropsRuntime<'shell.overlay'>) {
   return (
     <div
       role="dialog"
-      aria-label="Codex 直连网关"
+      aria-label="Pi 直连网关"
       style={{ ...PANEL_STYLE, left: panel.x, top: panel.y }}
     >
       <style>{PANEL_HOVER_CSS}</style>
@@ -172,13 +172,13 @@ export function ControlPanel(props: PropsRuntime<'shell.overlay'>) {
         title="拖动移动窗口"
       >
         <span aria-hidden style={{ fontSize: 14 }}>🔗</span>
-        <span style={{ fontWeight: 600 }}>Codex 直连网关</span>
+        <span style={{ fontWeight: 600 }}>Pi 直连网关</span>
         <span style={{ flex: 1 }} />
         <button
           type="button"
           aria-label="关闭"
           title="关闭"
-          className="codex-plus-close"
+          className="pi-plus-close"
           style={CLOSE_BUTTON}
           onPointerDown={(event) => event.stopPropagation()}
           onClick={() => togglePanel(false)}
@@ -201,7 +201,7 @@ export function ControlPanel(props: PropsRuntime<'shell.overlay'>) {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button
                     type="button"
-                    className="codex-plus-btn-danger"
+                    className="pi-plus-btn-danger"
                     style={DANGER_BUTTON}
                     onClick={() => { void run((api) => api.detach(sessionId)) }}
                   >
@@ -219,7 +219,7 @@ export function ControlPanel(props: PropsRuntime<'shell.overlay'>) {
                 />
                 <button
                   type="button"
-                  className="codex-plus-btn"
+                  className="pi-plus-btn"
                   style={{
                     ...BUTTON,
                     borderColor: THEME.accent,
@@ -230,7 +230,7 @@ export function ControlPanel(props: PropsRuntime<'shell.overlay'>) {
                     void run((api) => api.attach(sessionId, attachThread.trim() === '' ? undefined : attachThread.trim()))
                   }}
                 >
-                  {view?.threadId !== undefined ? '重新直连（已保存线程）' : '直连 Codex'}
+                  {view?.threadId !== undefined ? '重新直连（已保存线程）' : '直连 Pi'}
                 </button>
                 {view?.threadId !== undefined && (
                   <div style={{ color: THEME.textTertiary, fontSize: 11 }}>

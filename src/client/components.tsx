@@ -1,10 +1,10 @@
 /**
- * Official-slot entries for the Codex true-gateway: a session-header action
+ * Official-slot entries for the Pi true-gateway: a session-header action
  * (direct-connect badge), a composer-dock status line, and an input-dock
  * queue strip. Status display lives in the official slots; controls live in
  * the floating window (`ControlPanel`).
  *
- * @module dsh-subagent-codex-plus/client/components
+ * @module dsh-subagent-pi/client/components
  */
 
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -47,12 +47,12 @@ function dotColor(view: GatewaySessionView | null): string {
 
 function badgeLabel(view: GatewaySessionView | null): string {
   if (view?.attached) {
-    return `CDX-${(view.threadId ?? '').slice(0, 4)}`
+    return `PI-${(view.threadId ?? '').slice(0, 4)}`
   }
   if (view?.threadId !== undefined) {
-    return `CDX-${view.threadId.slice(0, 4)}`
+    return `PI-${view.threadId.slice(0, 4)}`
   }
-  return '直连 CDX'
+  return '直连 PI'
 }
 
 /** Session-header action: the direct-connect badge (status display). */
@@ -70,8 +70,8 @@ export function HeaderAction(props: PropsRuntime<'conversation.session.header.ac
         boxShadow: view?.attached ? 'inset 0 0 0 1px ' + dotColor(view) : undefined,
       }}
       title={view?.threadId !== undefined
-        ? `Codex 直连线程 ${view.threadId}${view.attached ? '（点击打开控制窗）' : '（重启后自动恢复，点击打开控制窗）'}`
-        : '将本会话直连到 Codex（点击打开控制窗）'}
+        ? `Pi 直连线程 ${view.threadId}${view.attached ? '（点击打开控制窗）' : '（重启后自动恢复，点击打开控制窗）'}`
+        : '将本会话直连到 Pi（点击打开控制窗）'}
       onClick={() => togglePanel(!panel.open)}
     >
       <span
@@ -108,14 +108,14 @@ const STATUS_LINE = {
 function statusText(view: GatewaySessionView | null): string | null {
   if (view?.attached) {
     const parts = [
-      `Codex 直连 · ${shortThread(view.threadId ?? '')}`,
+      `Pi 直连 · ${shortThread(view.threadId ?? '')}`,
       view.running ? '运行中' : '空闲',
     ]
     if (view.queue.length > 0) parts.push(`队列 ${view.queue.length}`)
     return parts.join(' · ')
   }
   if (view?.threadId !== undefined) {
-    return `Codex 直连已保存（线程 ${shortThread(view.threadId)}），重启后自动恢复`
+    return `Pi 直连已保存（线程 ${shortThread(view.threadId)}），重启后自动恢复`
   }
   return null
 }
@@ -130,7 +130,7 @@ export function DockStatus(props: PropsRuntime<'conversation.composer.dock'>) {
       style={STATUS_LINE}
       role="status"
       onClick={() => togglePanel(true)}
-      title="点击打开 Codex 网关控制窗"
+      title="点击打开 Pi 网关控制窗"
     >
       {text}
     </div>

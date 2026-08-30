@@ -1,11 +1,11 @@
 /**
- * Browser half of the Codex true-gateway. Registers the official-slot
+ * Browser half of the Pi true-gateway. Registers the official-slot
  * status seats (session-header badge, composer-dock status line, input-dock
  * queue strip) and the floating control window in the `shell.overlay`
- * layer. State flows from the host through same-origin `/api/codex-plus/*`
- * endpoints; the client never talks to Codex directly.
+ * layer. State flows from the host through same-origin `/api/pi-plus/*`
+ * endpoints; the client never talks to Pi directly.
  *
- * @module dsh-subagent-codex-plus/client
+ * @module dsh-subagent-pi/client
  */
 
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
@@ -23,7 +23,7 @@ import { setGatewayApi } from './gateway-store.ts'
 export const inject = ['slots']
 
 /** Plugin id used for every slot registration. */
-const ENTRY_ID = 'codex-plus'
+const ENTRY_ID = 'pi-plus'
 
 /**
  * Register the gateway status seats and the floating control window.

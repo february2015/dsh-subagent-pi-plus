@@ -3,7 +3,7 @@
  * service and any future host-side tests can share it without importing
  * the browser-facing types.
  *
- * @module dsh-subagent-codex-plus/gateway/ui-text
+ * @module dsh-subagent-pi/gateway/ui-text
  */
 
 import type { GatewayUserInput } from './wire.ts'

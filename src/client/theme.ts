@@ -5,7 +5,7 @@
  * `stroke-strong`, …) whose fallbacks forced white-on-white in dark mode.
  * Fallbacks are chosen for dark mode since that is where they matter most.
  *
- * @module dsh-subagent-codex-plus/client/theme
+ * @module dsh-subagent-pi/client/theme
  */
 
 export const THEME = {
@@ -39,7 +39,7 @@ export const THEME = {
 
 /** Injected once per floating window; inline styles cannot express `:hover`. */
 export const PANEL_HOVER_CSS = `
-.codex-plus-btn:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,0.08)) !important; }
-.codex-plus-btn-danger:hover { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(242,90,90,0.16)) !important; }
-.codex-plus-close:hover { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(242,90,90,0.16)) !important; color: var(--dsw-alias-state-error-secondary, #f25a5a) !important; }
+.pi-plus-btn:hover { background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,0.08)) !important; }
+.pi-plus-btn-danger:hover { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(242,90,90,0.16)) !important; }
+.pi-plus-close:hover { background: var(--dsw-alias-interactive-bg-hover-danger, rgba(242,90,90,0.16)) !important; color: var(--dsw-alias-state-error-secondary, #f25a5a) !important; }
 `

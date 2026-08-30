@@ -1,22 +1,22 @@
 /**
- * Persistent 1:1 binding between one dsh session and one durable Codex
- * thread (C3/Q4). Single local JSON file, atomic replace on write; survives
- * dsh restarts so a bound session reconnects to the same Codex thread.
+ * Persistent 1:1 binding between one dsh session and one durable Pi session
+ * (C3/Q4). Single local JSON file, atomic replace on write; survives dsh
+ * restarts so a bound session reconnects to the same Pi session.
  *
  * Invariants enforced here:
- * - one dsh session binds at most one Codex thread (Q4 first half);
- * - one Codex thread is owned by at most one dsh session (Q4 second half).
+ * - one dsh session binds at most one Pi session (Q4 first half);
+ * - one Pi session is owned by at most one dsh session (Q4 second half).
  *
- * @module dsh-subagent-codex-plus/gateway/binding
+ * @module dsh-subagent-pi/gateway/binding
  */
 
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 
-/** One durable session↔thread binding. */
+/** One durable session↔Pi-session binding. */
 export interface GatewayBinding {
-  /** Durable Codex thread id (`thread/resume` target). */
-  readonly codexThreadId: string
+  /** Durable Pi session id (`--session-id` resume target). */
+  readonly piSessionId: string
   /** Unix ms when the binding was established. */
   readonly boundAt: number
 }
@@ -49,10 +49,10 @@ export class GatewayBindingStore {
     return this.state.bindings[sessionId]
   }
 
-  /** Which dsh session owns the given Codex thread, if any. */
-  threadOwner(codexThreadId: string): string | undefined {
+  /** Which dsh session owns the given Pi session, if any. */
+  sessionOwner(piSessionId: string): string | undefined {
     for (const [sessionId, binding] of Object.entries(this.state.bindings)) {
-      if (binding.codexThreadId === codexThreadId) return sessionId
+      if (binding.piSessionId === piSessionId) return sessionId
     }
     return undefined
   }
@@ -63,22 +63,22 @@ export class GatewayBindingStore {
   }
 
   /**
-   * Bind one session to one thread. Refuses both halves of the 1:1
-   * invariant: a session already bound, or a thread already owned by
-   * another session.
+   * Bind one session to one Pi session. Refuses both halves of the 1:1
+   * invariant: a session already bound, or a Pi session already owned by
+   * another dsh session.
    * @returns the recorded binding.
    */
-  bind(sessionId: string, codexThreadId: string): GatewayBinding {
+  bind(sessionId: string, piSessionId: string): GatewayBinding {
     const existing = this.state.bindings[sessionId]
     if (existing !== undefined) {
-      throw new Error(`gateway: session "${sessionId}" is already bound to Codex thread "${existing.codexThreadId}"`)
+      throw new Error(`gateway: session "${sessionId}" is already bound to Pi session "${existing.piSessionId}"`)
     }
-    const owner = this.threadOwner(codexThreadId)
+    const owner = this.sessionOwner(piSessionId)
     if (owner !== undefined) {
-      throw new Error(`gateway: Codex thread "${codexThreadId}" is already bound to dsh session "${owner}"`)
+      throw new Error(`gateway: Pi session "${piSessionId}" is already bound to dsh session "${owner}"`)
     }
     const binding: GatewayBinding = {
-      codexThreadId,
+      piSessionId,
       boundAt: Date.now(),
     }
     this.state = {

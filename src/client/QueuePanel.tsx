@@ -1,12 +1,12 @@
 /**
- * Floating queue window for the Codex true-gateway, seated in the official
+ * Floating queue window for the Pi true-gateway, seated in the official
  * `shell.overlay` layer. Anchored just above the composer, it lists pending
- * Codex queue submissions in FIFO order and offers the standard operations:
+ * Pi queue submissions in FIFO order and offers the standard operations:
  * promote to front, insert (steer) into the active turn, delete, and edit.
  * It appears automatically whenever the queue is non-empty and hides when it
  * drains.
  *
- * @module dsh-subagent-codex-plus/client/queue-panel
+ * @module dsh-subagent-pi/client/queue-panel
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -183,7 +183,7 @@ export function QueuePanel(props: PropsRuntime<'shell.overlay'>) {
   return (
     <div
       role="region"
-      aria-label="Codex 排队消息"
+      aria-label="Pi 排队消息"
       style={{
         ...PANEL_STYLE,
         left: anchor.left,
@@ -225,15 +225,15 @@ export function QueuePanel(props: PropsRuntime<'shell.overlay'>) {
                   }}
                   autoFocus
                 />
-                <button type="button" className="codex-plus-btn" style={ICON_BUTTON} title="保存" onClick={() => { void saveEdit(item) }}>✓</button>
-                <button type="button" className="codex-plus-btn" style={ICON_BUTTON} title="取消" onClick={() => { setEditingId(null); setEditText('') }}>✕</button>
+                <button type="button" className="pi-plus-btn" style={ICON_BUTTON} title="保存" onClick={() => { void saveEdit(item) }}>✓</button>
+                <button type="button" className="pi-plus-btn" style={ICON_BUTTON} title="取消" onClick={() => { setEditingId(null); setEditText('') }}>✕</button>
               </>
             ) : (
               <>
                 <span style={TEXT} title={item.text}>{item.text}</span>
                 <button
                   type="button"
-                  className="codex-plus-btn"
+                  className="pi-plus-btn"
                   style={TEXT_BUTTON}
                   title="置顶"
                   disabled={index === 0}
@@ -243,7 +243,7 @@ export function QueuePanel(props: PropsRuntime<'shell.overlay'>) {
                 </button>
                 <button
                   type="button"
-                  className="codex-plus-btn"
+                  className="pi-plus-btn"
                   style={TEXT_BUTTON}
                   title="直接插入当前回合"
                   onClick={() => { void insertNow(item) }}
@@ -252,7 +252,7 @@ export function QueuePanel(props: PropsRuntime<'shell.overlay'>) {
                 </button>
                 <button
                   type="button"
-                  className="codex-plus-btn"
+                  className="pi-plus-btn"
                   style={TEXT_BUTTON}
                   title="编辑"
                   onClick={() => { setEditingId(item.id); setEditText(item.text) }}
@@ -261,7 +261,7 @@ export function QueuePanel(props: PropsRuntime<'shell.overlay'>) {
                 </button>
                 <button
                   type="button"
-                  className="codex-plus-btn-danger"
+                  className="pi-plus-btn-danger"
                   style={DANGER_TEXT}
                   title="删除"
                   onClick={() => { void run((api) => api.queueDelete(sessionId!, item.id)) }}
@@ -277,7 +277,7 @@ export function QueuePanel(props: PropsRuntime<'shell.overlay'>) {
         <div style={FOOTER}>
           <button
             type="button"
-            className="codex-plus-btn-danger"
+            className="pi-plus-btn-danger"
             style={{
               ...ICON_BUTTON,
               width: 'auto',
@@ -285,14 +285,14 @@ export function QueuePanel(props: PropsRuntime<'shell.overlay'>) {
               borderColor: THEME.danger,
               color: THEME.danger,
             }}
-            title="中断当前 Codex 回合"
+            title="中断当前 Pi 回合"
             onClick={() => { void run((api) => api.cancel(sessionId!)) }}
           >
             中断当前
           </button>
           <span style={{ flex: 1 }} />
           <span style={{ color: THEME.textTertiary, fontSize: 11 }}>
-            排队消息在 Codex 忙时自动入队
+            排队消息在 Pi 忙时自动入队
           </span>
         </div>
       )}

@@ -1,20 +1,21 @@
 /**
  * dsh `Agent` contract implemented as a thin forwarder to a durable
- * `CodexGateway`. The dsh host constructs the gateway (attach flow) and
+ * `PiGateway`. The dsh host constructs the gateway (attach flow) and
  * supplies the live session/inbox/context association at registration.
  *
- * Semantics follow the verified app-server behavior:
- * - followup -> `turn/start` when idle, `thread/queue/add` when busy;
- * - steer -> `turn/steer` (or a fresh turn when idle);
+ * Semantics follow the verified Pi RPC behavior:
+ * - followup -> `prompt` when idle, held in the gateway's local queue when
+ *   busy (released one by one on `agent_settled`);
+ * - steer -> Pi `steer` (or a fresh prompt when idle);
  * - inject -> buffered and merged as leading text into the next submission;
- * - cancel -> best-effort `turn/interrupt` (thread/process stay alive).
+ * - cancel -> best-effort Pi `abort` (session/process stay alive).
  *
- * Intermediate Codex output is projected into the dsh session log as
- * log-only events (R1-A1, A2) via {@link GatewayEventForwarder}; image blocks
- * are resolved to Codex `localImage` inputs (Q3); images pass through
- * untouched (visual understanding is handled by the hosts' `ocgw-vision` skill).
+ * Intermediate Pi output is projected into the dsh session log as log-only
+ * events (R1-A1, A2) via {@link GatewayEventForwarder}; image blocks are
+ * resolved to local files (Q3) and re-encoded to Pi base64 at command time.
+ * Visual understanding is handled by the hosts' `ocgw-vision` skill.
  *
- * @module dsh-subagent-codex-plus/gateway/agent
+ * @module dsh-subagent-pi/gateway/agent
  */
 
 import type { Context } from '@deepseek-ai/cordis'
@@ -32,7 +33,7 @@ import type {
   SessionId,
   UserMessage,
 } from '@deepseek-ai/dsh-session'
-import { CodexGateway } from './gateway.ts'
+import { PiGateway } from './gateway.ts'
 import {
   DEFAULT_EVENT_FORWARDER_OPTIONS,
   GatewayEventForwarder,
@@ -52,9 +53,9 @@ export interface GatewayAgentHost {
 }
 
 export interface GatewayAgentOptions {
-  /** Codex → dsh session event forwarding policy (R1-A1/A2). */
+  /** Pi → dsh session event forwarding policy (R1-A1/A2). */
   readonly eventForwarder?: GatewayEventForwarderOptions
-  /** Resolves dsh image blocks to Codex `localImage` inputs (Q3). */
+  /** Resolves dsh image blocks to local image files (Q3). */
   readonly imageResolver?: GatewayImageResolver
 }
 
@@ -91,7 +92,7 @@ export async function resolveInputs(
   return inputs
 }
 
-/** Forwarder agent driving one Codex thread for one dsh session. */
+/** Forwarder agent driving one Pi session for one dsh session. */
 export class GatewayAgent implements Agent {
   readonly id: SessionId
   readonly options: AgentOptions
@@ -100,14 +101,14 @@ export class GatewayAgent implements Agent {
   ctx: Context
 
   private pendingInject: string[] = []
-  /** Prompts waiting for their Codex turn to start (released as durable `user/message`). */
+  /** Prompts waiting for their Pi turn to start (released as durable `user/message`). */
   private readonly pendingUserMessages: UserMessage[] = []
   private readonly idleResolvers = new Set<() => void>()
   private maintenanceSignal: AbortSignal | undefined
 
   constructor(
     private readonly host: GatewayAgentHost,
-    private readonly gateway: CodexGateway,
+    private readonly gateway: PiGateway,
     private readonly agentOptions: GatewayAgentOptions = {},
   ) {
     this.id = host.id
@@ -124,12 +125,12 @@ export class GatewayAgent implements Agent {
         onError: (message) => this.report(new Error(message)),
       },
     )
-    this.gateway.on('notification', (notification) => forwarder.forward(notification))
+    this.gateway.on('notification', (event) => forwarder.forward(event))
     // The forwarder listener above runs first, so `turn/start`/`step/start`
     // land before the prompt; the prompt then opens its own turn on the
     // surface instead of piling up in the host inbox queue.
-    this.gateway.on('notification', (notification) => {
-      if (notification.method === 'turn/started') this.releasePendingPrompt()
+    this.gateway.on('notification', (event) => {
+      if (event.type === 'turn_start') this.releasePendingPrompt()
     })
   }
 
@@ -196,17 +197,18 @@ export class GatewayAgent implements Agent {
     const injected = this.pendingInject
     this.pendingInject = []
     if (kind === 'steer' && this.gateway.turnState === 'running') {
-      // `turn/steer` redirects the ACTIVE turn without a new `turn/started`
-      // notification, so a prompt buffered for release on turn start would
-      // never flush and the inserted message would never reach the chat.
-      // Land it on the surface immediately; it belongs to the running turn.
+      // Pi `steer` runs the message on the next turn WITHOUT a fresh user
+      // `message_start` before it, so a prompt buffered for release on turn
+      // start would never flush and the inserted message would never reach
+      // the chat. Land it on the surface immediately; it belongs to the
+      // running turn.
       try {
         this.session.append('user/message', message, { surfaceOp: 'append' })
       } catch (error: unknown) {
         this.report(error)
       }
     } else {
-      // Buffer the prompt until the Codex turn actually starts, mirroring the
+      // Buffer the prompt until the Pi turn actually starts, mirroring the
       // loop agent's claim→user/message path; the durable record then shows the
       // prompt inside its own turn instead of leaving it in the inbox queue.
       this.pendingUserMessages.push(message)
@@ -247,7 +249,7 @@ export class GatewayAgent implements Agent {
     if (kind === 'steer') {
       await this.gateway.steer(inputs)
     } else {
-      await this.gateway.submit(inputs)
+      await this.gateway.submit(inputs, message.id ?? undefined)
     }
   }
 

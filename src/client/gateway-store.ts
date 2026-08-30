@@ -4,7 +4,7 @@
  * module singletons + `useSyncExternalStore`; components never own the
  * polling lifecycle (the last subscriber for a session stops its timer).
  *
- * @module dsh-subagent-codex-plus/client/gateway-store
+ * @module dsh-subagent-pi/client/gateway-store
  */
 
 import { useCallback, useSyncExternalStore } from 'react'
@@ -133,7 +133,7 @@ export interface PanelState {
   readonly userMoved: boolean
 }
 
-const PANEL_KEY = 'dsh-codex-plus-panel'
+const PANEL_KEY = 'dsh-pi-plus-panel'
 const PANEL_WIDTH = 320
 
 /** Default anchor: top-right of the chat column when no user position yet. */

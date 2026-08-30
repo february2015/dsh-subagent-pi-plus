@@ -1,15 +1,15 @@
 /**
  * Gateway host UI service: same-origin JSON endpoints under
- * `/api/codex-plus/*` that the browser client (header badge, dock status
- * line, queue dock, floating control window) drives. Wraps the
- * {@link GatewayManager} and mirrors the durable bindings (C3) so the UI
- * can show direct-connect state, the live queue, steer insertion, cancel,
- * and attach/detach without touching any dsh model path.
+ * `/api/pi-plus/*` that the browser client (header badge, dock status line,
+ * queue dock, floating control window) drives. Wraps the {@link GatewayManager}
+ * and mirrors the durable bindings (C3) so the UI can show direct-connect
+ * state, the live queue, steer insertion, cancel, and attach/detach without
+ * touching any dsh model path.
  *
  * Route registration follows the dsh-pet pattern: plain `WebRoute`s on the
  * host webserver; the connection plugin's authority checks gate `/api/*`.
  *
- * @module dsh-subagent-codex-plus/gateway/ui
+ * @module dsh-subagent-pi/gateway/ui
  */
 
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -34,7 +34,7 @@ import type { GatewayManager } from './manager.ts'
 import { textOf } from './ui-text.ts'
 
 /** Browser-facing base path of the gateway API. */
-export const GATEWAY_UI_PREFIX = '/api/codex-plus'
+export const GATEWAY_UI_PREFIX = '/api/pi-plus'
 
 /** Validate a JSON-body session id and lift it to the branded type. */
 function sessionIdOf(value: unknown): SessionId | undefined {
@@ -204,7 +204,7 @@ export class GatewayUiService {
     }
     const attached = this.manager.get(sessionId)
     if (attached === undefined) {
-      return { ok: false, error: 'gateway: session is not attached to Codex' }
+      return { ok: false, error: 'gateway: session is not attached to Pi' }
     }
     try {
       await attached.gateway.dequeue(id)
@@ -225,7 +225,7 @@ export class GatewayUiService {
     }
     const attached = this.manager.get(sessionId)
     if (attached === undefined) {
-      return { ok: false, error: 'gateway: session is not attached to Codex' }
+      return { ok: false, error: 'gateway: session is not attached to Pi' }
     }
     try {
       await attached.gateway.requeue(ids as readonly string[])
@@ -249,7 +249,7 @@ export class GatewayUiService {
     }
     const attached = this.manager.get(sessionId)
     if (attached === undefined) {
-      return { ok: false, error: 'gateway: session is not attached to Codex' }
+      return { ok: false, error: 'gateway: session is not attached to Pi' }
     }
     try {
       await attached.gateway.updateQueue(id, text.trim())
@@ -270,12 +270,12 @@ export class GatewayUiService {
     }
     const attached = this.manager.get(sessionId)
     if (attached === undefined) {
-      return { ok: false, error: 'gateway: session is not attached to Codex' }
+      return { ok: false, error: 'gateway: session is not attached to Pi' }
     }
     try {
       // Route through the GatewayAgent so the inserted prompt lands on the
       // session surface as a durable `user/message`; steering the raw gateway
-      // would redirect Codex without recording the prompt, so the insert never
+      // would redirect Pi without recording the prompt, so the insert never
       // shows up in the chat.
       attached.agent.steer(createUserMessage({
         content: [{ type: 'text', text }],
@@ -294,7 +294,7 @@ export class GatewayUiService {
     }
     const attached = this.manager.get(sessionId)
     if (attached === undefined) {
-      return { ok: false, error: 'gateway: session is not attached to Codex' }
+      return { ok: false, error: 'gateway: session is not attached to Pi' }
     }
     attached.gateway.cancel()
     return { ok: true, session: await this.view(sessionId) }
@@ -312,7 +312,7 @@ export class GatewayUiService {
         : {
             sessionId,
             attached: false,
-            threadId: binding.codexThreadId,
+            threadId: binding.piSessionId,
             phase: 'stopped',
             running: false,
             queue: [],
@@ -324,7 +324,7 @@ export class GatewayUiService {
       return {
         sessionId,
         attached: false,
-        ...binding === undefined ? {} : { threadId: binding.codexThreadId },
+        ...binding === undefined ? {} : { threadId: binding.piSessionId },
         phase: 'stopped',
         running: false,
         queue: [],
@@ -332,9 +332,9 @@ export class GatewayUiService {
     }
     let queue: readonly GatewayQueueItemView[] = []
     try {
-      queue = (await attached.gateway.queue()).map((entry) => ({
+      queue = (await attached.gateway.pendingQueue()).map((entry) => ({
         id: entry.id,
-        text: textOf(entry.input),
+        text: entry.text,
       }))
     } catch {
       // Queue read failure must not blank the badge; keep the last-known view
@@ -353,7 +353,7 @@ export class GatewayUiService {
   private bindings(): readonly GatewayBindingView[] {
     return this.manager.store.list().map(([sessionId, binding]) => ({
       sessionId,
-      codexThreadId: binding.codexThreadId,
+      piSessionId: binding.piSessionId,
     }))
   }
 }

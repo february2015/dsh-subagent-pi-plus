@@ -1,10 +1,10 @@
 /**
- * Host wiring: attach/detach a live dsh session to one durable Codex thread.
+ * Host wiring: attach/detach a live dsh session to one durable Pi session.
  *
  * The generic prompt path (`session.prompt` → `agent.followup`/`steer`)
  * routes to whatever agent the registry holds for the session id. Replacing
  * that entry with a {@link GatewayAgent} therefore redirects the whole
- * conversation to Codex without any dsh host patch; removing it returns the
+ * conversation to Pi without any dsh host patch; removing it returns the
  * session to cold state, so the host's ordinary resume path rebuilds a
  * standard loop agent on the next prompt (Q1).
  *
@@ -15,7 +15,7 @@
  * cancelled (parked); its factory-owned teardown later finds its detach
  * already consumed and no-ops safely.
  *
- * @module dsh-subagent-codex-plus/gateway/attach
+ * @module dsh-subagent-pi/gateway/attach
  */
 
 import type { Context } from '@deepseek-ai/cordis'
@@ -24,38 +24,34 @@ import { createScope } from '@deepseek-ai/dsh-scope'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { GatewayAgent } from './agent.ts'
 import type { GatewayEventForwarderOptions } from './events.ts'
-import { CodexGateway, type CodexGatewayOptions } from './gateway.ts'
+import { PiGateway, type PiGatewayOptions } from './gateway.ts'
 
 import { GatewayImageResolver } from './images.ts'
 
-/** A live session↔Codex attachment. */
+/** A live session↔Pi attachment. */
 export interface AttachedGateway {
   /** The registered gateway agent (now the session's routing target). */
   readonly agent: GatewayAgent
-  /** The underlying app-server/thread gateway. */
-  readonly gateway: CodexGateway
-  /** Durable Codex thread id. */
+  /** The underlying RPC child/session gateway. */
+  readonly gateway: PiGateway
+  /** Durable Pi session id. */
   readonly threadId: string
   /** Detach: unregister, restore the session to cold state, stop the child. */
   detach(): Promise<void>
 }
 
 export interface AttachGatewayOptions {
-  /** Working directory for the app-server child and thread. */
+  /** Working directory for the Pi child and its session. */
   readonly cwd: string
-  /** App-server argv (defaults to the package-local codex bin). */
+  /** Pi argv (defaults to the manager-built `pi --mode rpc` invocation). */
   readonly argv?: readonly string[]
-  /** Resume an existing durable thread instead of creating one. */
+  /** Resume an existing durable Pi session instead of creating one. */
   readonly threadId?: string
-  /** Optional per-thread model override. */
-  readonly model?: string
-  /** Optional approval policy for gateway turns. */
-  readonly approvalPolicy?: string
-  /** Extra environment for the app-server child. */
+  /** Extra environment for the Pi child. */
   readonly env?: Record<string, string>
   /** Per-agent model options carried on the registered agent. */
   readonly agentOptions?: AgentOptions
-  /** Codex → dsh session event forwarding policy (R1-A1/A2). */
+  /** Pi → dsh session event forwarding policy (R1-A1/A2). */
   readonly eventForwarder?: GatewayEventForwarderOptions
 }
 
@@ -70,7 +66,7 @@ interface SessionStoreEntry {
 }
 
 /**
- * Attach a session to a Codex thread: start (or resume) the gateway, build a
+ * Attach a session to a Pi session: start (or resume) the gateway, build a
  * scoped GatewayAgent, and swap it into the registries in place of the
  * session's live loop agent.
  * @param ctx - host context carrying `agents`/`sessions`.
@@ -94,19 +90,22 @@ export async function attachGateway(
   }
   const existing = registry.get(sessionId)
   if (existing !== undefined && isGatewayAgent(existing)) {
-    throw new Error(`gateway: session "${sessionId}" is already attached to Codex`)
+    throw new Error(`gateway: session "${sessionId}" is already attached to Pi`)
   }
 
-  const gateway = new CodexGateway({
+  const gateway = new PiGateway({
     cwd: options.cwd,
     ...options.argv === undefined ? {} : { argv: options.argv },
-    ...options.model === undefined ? {} : { model: options.model },
-    ...options.approvalPolicy === undefined ? {} : { approvalPolicy: options.approvalPolicy },
     ...options.env === undefined ? {} : { env: options.env },
+    onStderr: (line) => {
+      // Pi child diagnostics must not die with the child; route them through
+      // the host logger so an unexpected exit is explainable.
+      ctx.logger?.warn?.('[pi-gateway]', line)
+    },
   })
   let threadId: string
   try {
-    threadId = await gateway.start(options.threadId)
+    threadId = await gateway.start()
   } catch (error) {
     void gateway.dispose()
     throw error

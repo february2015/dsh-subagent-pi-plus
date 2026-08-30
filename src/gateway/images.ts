@@ -1,14 +1,14 @@
 /**
- * Resolve dsh image blocks to Codex `localImage` inputs (Q3).
+ * Resolve dsh image blocks to local image files (Q3).
  *
  * dsh stores images as opaque content-addressed attachment refs; the resolver
  * reads the bytes through `ctx.attachments`, materializes them under a
- * per-gateway temp directory, and hands the local path to the app-server
- * (`localImage`, protocol-verified). Images pass through untouched: visual
- * understanding is handled by the hosts' shared `ocgw-vision` skill (TeamAI),
- * not by this plugin.
+ * per-gateway temp directory, and hands the local path to the gateway, which
+ * re-encodes it to Pi's base64 `image` content at command time. Images pass
+ * through untouched: visual understanding is handled by the hosts' shared
+ * `ocgw-vision` skill (TeamAI), not by this plugin.
  *
- * @module dsh-subagent-codex-plus/gateway/images
+ * @module dsh-subagent-pi/gateway/images
  */
 
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
@@ -30,12 +30,12 @@ export function mediaTypeExt(mediaType: string): string {
   return MEDIA_EXT[mediaType] ?? '.img'
 }
 
-/** One resolved image: the Codex input block. */
+/** One resolved image: the Pi image input block. */
 export interface ResolvedImage {
   readonly input: GatewayLocalImageInput
 }
 
-/** Materializes dsh attachment bytes into Codex-local image files. */
+/** Materializes dsh attachment bytes into Pi-local image files. */
 export class GatewayImageResolver {
   private dir: string | undefined
   private index = 0
@@ -69,7 +69,7 @@ export class GatewayImageResolver {
 
   private async ensureDir(): Promise<string> {
     if (this.dir !== undefined) return this.dir
-    this.dir = await mkdtemp(join(tmpdir(), 'dsh-codex-plus-img-'))
+    this.dir = await mkdtemp(join(tmpdir(), 'dsh-pi-plus-img-'))
     return this.dir
   }
 }

@@ -1,9 +1,9 @@
 /**
  * Browser half of the gateway API: same-origin JSON endpoints under
- * `/api/codex-plus/*`. Plain `fetch`; the host webserver's authority checks
+ * `/api/pi-plus/*`. Plain `fetch`; the host webserver's authority checks
  * gate the `/api` prefix, so a remote or untrusted origin cannot reach it.
  *
- * @module dsh-subagent-codex-plus/client/api
+ * @module dsh-subagent-pi/client/api
  */
 
 import type {
@@ -23,7 +23,7 @@ export interface GatewayApi {
   cancel(sessionId: string): Promise<GatewayActionResponse>
 }
 
-const BASE = '/api/codex-plus'
+const BASE = '/api/pi-plus'
 
 /** GET JSON (no body). */
 async function getJson<T>(path: string): Promise<T> {
