@@ -1,0 +1,62 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    "lib": [
+      "ES2024"
+    ],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@deepseek-ai/cordis": [
+        "/Users/robin/.dsh/profiles/node_modules/@deepseek-ai/cordis/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-agent": [
+        "/Users/robin/.dsh/profiles/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-session": [
+        "/Users/robin/.dsh/profiles/node_modules/@deepseek-ai/dsh-session/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-llm": [
+        "/Users/robin/.dsh/profiles/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-subagent": [
+        "/Users/robin/.dsh/profiles/node_modules/@deepseek-ai/dsh-subagent/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-attachment": [
+        "/Users/robin/.dsh/profiles/node_modules/@deepseek-ai/dsh-attachment/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-subprocess": [
+        "/Users/robin/.dsh/profiles/node_modules/@deepseek-ai/dsh-subprocess/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-timeout": [
+        "/Users/robin/.dsh/profiles/node_modules/@deepseek-ai/dsh-timeout/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-invariants": [
+        "/Users/robin/.dsh/profiles/node_modules/@deepseek-ai/dsh-invariants/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-scope": [
+        "/Users/robin/.dsh/profiles/node_modules/@deepseek-ai/dsh-scope/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-commands": [
+        "/Users/robin/.dsh/profiles/node_modules/@deepseek-ai/dsh-commands/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-host-webserver": [
+        "/Users/robin/.dsh/profiles/node_modules/@deepseek-ai/dsh-host-webserver/lib/types/index.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "src/client"
+  ]
+}

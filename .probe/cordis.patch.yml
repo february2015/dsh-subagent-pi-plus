@@ -1,0 +1,5 @@
+# Probe bundle: inserts the attach/detach runtime verification plugin.
+- insert:
+    - id: gateway-probe
+      name: dsh-gateway-probe
+      config: {}

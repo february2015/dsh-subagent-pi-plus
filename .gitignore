@@ -1,0 +1,11 @@
+node_modules/
+lib/
+*.tsbuildinfo
+.DS_Store
+
+# Runtime gateway probe: track the hand-written main + bundle config only;
+# the compiled gateway/*.js copies under .probe/lib stay ignored.
+!.probe/
+!.probe/lib/
+.probe/lib/gateway/
+!.probe/lib/index.js
