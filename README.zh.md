@@ -9,6 +9,19 @@ kind: "package-bundle"
 
 **本插件基于官方 `@deepseek-ai/dsh-subagent-codex` 插件 fork 而来**（经由个人项目 `dsh-subagent-codex-plus`），把直连对象从 Codex 换成 Pi，让 **Pi 在 DeepSeek Harness（dsh）里成为一等公民**。
 
+## 与 dsh-subagent-codex-plus 的关系
+
+[`dsh-subagent-codex-plus`](https://github.com/february2015/dsh-subagent-codex-plus) 是本插件的**姊妹插件**：两者都是官方 `@deepseek-ai/dsh-subagent-codex` 的个人 fork，在其上叠加了同一套真网关层——直连、排队/插入连续对话、中间过程实时透出、持久绑定与图片透传。二者唯一的区别是直连对象——`dsh-subagent-codex-plus` 直连 **Codex**，本插件直连 **Pi**；架构完全相同，功能、命令与文档一一对应：
+
+| | `dsh-subagent-codex-plus` | `dsh-subagent-pi`（本插件） |
+|---|---|---|
+| 直连对象 | Codex | Pi |
+| 绑定命令 | `/codex-lock` | `/pi-lock` |
+| 解绑命令 | `/codex-unlock` | `/pi-unlock` |
+| 标题徽标 | `CDX-xxxx` | `PI-xxxx` |
+
+两个项目同属一个 GitHub 账号，并行维护。可按需二选一，也可同时安装：各自绑定各自的会话，互不干扰。
+
 ## 功能
 
 ### 1. 真网关直连（核心功能）
