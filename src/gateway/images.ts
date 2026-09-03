@@ -8,7 +8,7 @@
  * through untouched: visual understanding is handled by the hosts' shared
  * `ocgw-vision` skill (TeamAI), not by this plugin.
  *
- * @module dsh-subagent-pi/gateway/images
+ * @module dsh-subagent-pi-plus/gateway/images
  */
 
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'

@@ -10,7 +10,7 @@
  * live in the gateway layer (`gateway.ts`) and the event forwarder
  * (`events.ts`).
  *
- * @module dsh-subagent-pi/gateway/pi-wire
+ * @module dsh-subagent-pi-plus/gateway/pi-wire
  */
 
 import type { Readable, Writable } from 'node:stream'

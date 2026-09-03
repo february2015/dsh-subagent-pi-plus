@@ -1,5 +1,5 @@
 {
-  "name": "dsh-subagent-pi",
+  "name": "dsh-subagent-pi-plus",
   "description": "One-shot Pi subagent provider and true-gateway over the Pi RPC protocol",
   "version": "0.3.0",
   "publishConfig": {

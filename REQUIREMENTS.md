@@ -1,4 +1,4 @@
-# dsh-subagent-pi 需求文档
+# dsh-subagent-pi-plus 需求文档
 
 > 状态：v1.0 定稿（R0-R4 + Q1-Q5 + C3 全部确认；**R3 真网关 = V1 首发核心**）
 > 项目：`/Users/robin/myProject/dsh-subagent-pi`
@@ -26,7 +26,7 @@
 ## R0 基线
 
 - 保留 one-shot 行为：一次委派 = 一个 Pi 子进程（`pi --mode rpc`）跑完返回最终答案，作为可回退基线。
-- 包名 `dsh-subagent-pi` / 插件名 `subagent-pi` / provider 名 `pi`。
+- 包名 `dsh-subagent-pi-plus` / 插件名 `subagent-pi-plus` / provider 名 `pi-plus`。
 
 ## R1 中间过程全量透出
 

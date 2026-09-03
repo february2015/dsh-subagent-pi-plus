@@ -4,7 +4,7 @@
  * module singletons + `useSyncExternalStore`; components never own the
  * polling lifecycle (the last subscriber for a session stops its timer).
  *
- * @module dsh-subagent-pi/client/gateway-store
+ * @module dsh-subagent-pi-plus/client/gateway-store
  */
 
 import { useCallback, useSyncExternalStore } from 'react'

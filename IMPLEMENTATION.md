@@ -1,4 +1,4 @@
-# dsh-subagent-pi 功能开发清单
+# dsh-subagent-pi-plus 功能开发清单
 
 > 用法：按顺序执行，每完成一步把 `[ ]` 改成 `[x]` 并提交。
 > 依据：`REQUIREMENTS.md`、`TECH-VERIFICATION.md`（已验证事实）。
@@ -6,7 +6,7 @@
 
 ## 阶段 0：基线（已完成）
 
-- [x] 0.1 fork + 改名：包 `dsh-subagent-pi` / 插件 `subagent-pi` / provider `pi`（含 git 基线提交）
+- [x] 0.1 fork + 改名：包 `dsh-subagent-pi-plus` / 插件 `subagent-pi-plus` / provider `pi`（含 git 基线提交）
 - [x] 0.2 技术验证 + 记录：`TECH-VERIFICATION.md`（Pi RPC 协议探针）
 - [x] 0.3 需求定稿：`REQUIREMENTS.md`（R0-R4 + Q1-Q5 + C3；真网关 = V1 首发核心）
 - [x] 0.4 运行环境：dsh 0.1.1-rc.2 profile 运行时；独立 tsconfig；`npm run typecheck` + `npm run build` 全绿

@@ -5,7 +5,7 @@
  * `stroke-strong`, …) whose fallbacks forced white-on-white in dark mode.
  * Fallbacks are chosen for dark mode since that is where they matter most.
  *
- * @module dsh-subagent-pi/client/theme
+ * @module dsh-subagent-pi-plus/client/theme
  */
 
 export const THEME = {

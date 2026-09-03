@@ -3,7 +3,7 @@
  * enforces the persistent 1:1 binding (Q4), restores bindings across restarts
  * (C3), and restores normal mode on detach (Q1).
  *
- * @module dsh-subagent-pi/gateway/manager
+ * @module dsh-subagent-pi-plus/gateway/manager
  */
 
 import { randomUUID } from 'node:crypto'

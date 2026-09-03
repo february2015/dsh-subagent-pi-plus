@@ -1,16 +1,16 @@
 /**
- * Package-owned invariant companion for `dsh-subagent-pi`.
- * @module dsh-subagent-pi/invariant
+ * Package-owned invariant companion for `dsh-subagent-pi-plus`.
+ * @module dsh-subagent-pi-plus/invariant
  */
 
 /* jscpd:ignore-start */
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
 
-const PACKAGE_NAME = 'dsh-subagent-pi'
+const PACKAGE_NAME = 'dsh-subagent-pi-plus'
 
 /** Cordis companion plugin name. */
-export const name = 'subagent-pi-invariant'
+export const name = 'subagent-pi-plus-invariant'
 /** Service required before the companion can reserve package ownership. */
 export const inject = ['invariants']
 

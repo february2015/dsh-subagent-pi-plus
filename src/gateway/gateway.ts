@@ -10,7 +10,7 @@
  * and a running/idle projection so the dsh-facing adapter decides how to
  * render and route them.
  *
- * @module dsh-subagent-pi/gateway/gateway
+ * @module dsh-subagent-pi-plus/gateway/gateway
  */
 
 import { spawn, type ChildProcess } from 'node:child_process'

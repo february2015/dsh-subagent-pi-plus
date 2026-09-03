@@ -1,5 +1,5 @@
 # Optional Profile Bundle: register the Pi provider on the Host plane only.
 # Agent Presets grant the model-facing tool independently.
 - insert:
-    - id: subagent-pi
-      name: 'dsh-subagent-pi'
+    - id: subagent-pi-plus
+      name: 'dsh-subagent-pi-plus'

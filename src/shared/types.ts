@@ -3,7 +3,7 @@
  * and the browser client (`src/client/*`). Pure data interfaces with zero
  * imports so both compile units can consume them safely.
  *
- * @module dsh-subagent-pi/shared/types
+ * @module dsh-subagent-pi-plus/shared/types
  */
 
 /** One queued Pi message as the browser sees it. */

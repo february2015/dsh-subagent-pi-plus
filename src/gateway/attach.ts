@@ -15,7 +15,7 @@
  * cancelled (parked); its factory-owned teardown later finds its detach
  * already consumed and no-ops safely.
  *
- * @module dsh-subagent-pi/gateway/attach
+ * @module dsh-subagent-pi-plus/gateway/attach
  */
 
 import type { Context } from '@deepseek-ai/cordis'

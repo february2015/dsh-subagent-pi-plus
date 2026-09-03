@@ -22,7 +22,7 @@
  * - `message_update` (`toolcall_end`) → `tool/call`
  * - `turn_end` → `step/end` + durable `assistant/message` + `turn/end`
  *
- * @module dsh-subagent-pi/gateway/events
+ * @module dsh-subagent-pi-plus/gateway/events
  */
 
 import { createAssistantMessage, type CallId, type ContentBlock, type StreamChunk } from '@deepseek-ai/dsh-llm'

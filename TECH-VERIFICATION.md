@@ -1,4 +1,4 @@
-# dsh-subagent-pi 技术验证报告
+# dsh-subagent-pi-plus 技术验证报告
 
 > 状态：**全部核心项已实测验证**（2026-08-30）
 > 验证方式：真实 `pi --mode rpc` 子进程 + dsh 本机运行时 + Playwright UI 实测

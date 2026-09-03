@@ -7,7 +7,7 @@
  * published dsh package set. This transport mirrors the framing semantics of
  * the official `@deepseek-ai/dsh-sdk-protocol` line transport.
  *
- * @module dsh-subagent-pi/gateway/transport
+ * @module dsh-subagent-pi-plus/gateway/transport
  */
 
 import type { Readable, Writable } from 'node:stream'

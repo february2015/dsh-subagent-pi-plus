@@ -4,7 +4,7 @@
  * workspace; the true-gateway (`/pi-lock`) attaches the whole conversation to
  * one durable Pi session.
  *
- * @module dsh-subagent-pi
+ * @module dsh-subagent-pi-plus
  */
 
 import { homedir } from 'node:os'
@@ -30,10 +30,10 @@ import { GatewayBindingStore } from './gateway/binding.ts'
 import { GatewayManager } from './gateway/manager.ts'
 import { GatewayUiService } from './gateway/ui.ts'
 
-export const name = 'subagent-pi'
+export const name = 'subagent-pi-plus'
 export const inject = ['subagents', 'subprocess']
 
-const DEFAULT_PROVIDER_NAME = 'pi'
+const DEFAULT_PROVIDER_NAME = 'pi-plus'
 
 /** Deployment-owned model, environment, and process-release settings. */
 export interface Config {
@@ -104,20 +104,20 @@ class PiProvider implements SubagentProvider {
     const parentCwd = request.parent.session.header.cwd
     if (parentCwd === undefined) {
       throw new Error(
-        'subagent-pi: no working directory for the child — delegate from a parent session that has one',
+        'subagent-pi-plus: no working directory for the child — delegate from a parent session that has one',
       )
     }
     let cwd: string
     try {
       cwd = resolveChildCwd(
-        'subagent-pi',
+        'subagent-pi-plus',
         undefined,
         parentCwd,
       )
     } catch (error: unknown) {
       if (request.signal.aborted) {
         throw new Error(
-          'subagent-pi: request was aborted before RPC startup',
+          'subagent-pi-plus: request was aborted before RPC startup',
         )
       }
       throw error
@@ -132,7 +132,7 @@ class PiProvider implements SubagentProvider {
       spawn: spawnSpec => this.ctx.subprocess.spawn(spawnSpec),
       onError: (error, stopReason) => {
         this.ctx.logger.warn(
-          `subagent-pi "${this.name}": child run failed (${stopReason}): ${error.message}`,
+          `subagent-pi-plus "${this.name}": child run failed (${stopReason}): ${error.message}`,
         )
       },
     }
@@ -153,13 +153,13 @@ export function apply(ctx: Context, config: Config): void {
     disposeGraceMs: config.disposeGraceMs as number,
   }
   assertPositiveFinite(
-    'subagent-pi',
+    'subagent-pi-plus',
     'disposeGraceMs',
     resolved.disposeGraceMs,
   )
   if (resolved.disposeGraceMs > MAX_TIMER_DELAY_MS) {
     throw new Error(
-      `subagent-pi: disposeGraceMs must be no greater than ${MAX_TIMER_DELAY_MS}`,
+      `subagent-pi-plus: disposeGraceMs must be no greater than ${MAX_TIMER_DELAY_MS}`,
     )
   }
   ctx.subagents.registerProvider(new PiProvider(

@@ -4,7 +4,7 @@
  * queue strip. Status display lives in the official slots; controls live in
  * the floating window (`ControlPanel`).
  *
- * @module dsh-subagent-pi/client/components
+ * @module dsh-subagent-pi-plus/client/components
  */
 
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'

@@ -3,7 +3,7 @@ description: "Forked from the official @deepseek-ai/dsh-subagent-codex: makes Pi
 kind: "package-bundle"
 ---
 
-# dsh-subagent-pi
+# dsh-subagent-pi-plus
 
 English | [中文](README.zh.md)
 
@@ -13,7 +13,7 @@ English | [中文](README.zh.md)
 
 [`dsh-subagent-codex-plus`](https://github.com/february2015/dsh-subagent-codex-plus) is the **sibling plugin** of this one: both are personal forks of the official `@deepseek-ai/dsh-subagent-codex` that add the same true-gateway layer on top — direct connection, queued/steered continuous conversation, live intermediate output, durable binding, and image passthrough. They differ only in the direct-connected agent — **Codex** in `dsh-subagent-codex-plus`, **Pi** here — and share the same architecture, so features, commands, and docs map one-to-one:
 
-| | `dsh-subagent-codex-plus` | `dsh-subagent-pi` (this plugin) |
+| | `dsh-subagent-codex-plus` | `dsh-subagent-pi-plus` (this plugin) |
 |---|---|---|
 | Direct-connected agent | Codex | Pi |
 | Lock command | `/codex-lock` | `/pi-lock` |

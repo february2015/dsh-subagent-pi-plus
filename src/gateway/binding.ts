@@ -7,7 +7,7 @@
  * - one dsh session binds at most one Pi session (Q4 first half);
  * - one Pi session is owned by at most one dsh session (Q4 second half).
  *
- * @module dsh-subagent-pi/gateway/binding
+ * @module dsh-subagent-pi-plus/gateway/binding
  */
 
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'

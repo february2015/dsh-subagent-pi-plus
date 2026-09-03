@@ -4,7 +4,7 @@
  * only when `DSH_SUBAGENT_PI_DEBUG=1` is set, so production runs stay
  * quiet and the trail is available on demand.
  *
- * @module dsh-subagent-pi/gateway/debug
+ * @module dsh-subagent-pi-plus/gateway/debug
  */
 
 import { appendFileSync } from 'node:fs'

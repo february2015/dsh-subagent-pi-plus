@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Repair dsh session logs whose `turn` ordinals restart after a process
- * restart (dsh-subagent-pi forwarder used to begin numbering from 1
+ * restart (dsh-subagent-pi-plus forwarder used to begin numbering from 1
  * every boot, so a durable log ended up with duplicate turn numbers). The
  * Harness front-end conversation assembler rejects a second `start` match for
  * the same context ("received more than one start Match") and hides the whole

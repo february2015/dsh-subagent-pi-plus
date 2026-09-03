@@ -3,7 +3,7 @@
  * subprocess seam, publish only after the session is ready, run one prompt,
  * and dispose to whole-tree quiescence.
  *
- * @module dsh-subagent-pi/pi-run
+ * @module dsh-subagent-pi-plus/pi-run
  */
 
 import { randomUUID } from 'node:crypto'
@@ -95,7 +95,7 @@ export async function startPiRun(
 ): Promise<SubagentRun> {
   const texts = textTask(request.prompt)
   if (request.signal.aborted) {
-    throw new Error('subagent-pi: request was aborted before RPC startup')
+    throw new Error('subagent-pi-plus: request was aborted before RPC startup')
   }
   const sessionId = randomUUID()
 
@@ -109,7 +109,7 @@ export async function startPiRun(
       env: spec.env,
     })
   } catch (error: unknown) {
-    throw new Error(`subagent-pi: failed to spawn Pi child: ${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(`subagent-pi-plus: failed to spawn Pi child: ${error instanceof Error ? error.message : String(error)}`)
   }
 
   const wire = new PiRpcWire(
@@ -134,7 +134,7 @@ export async function startPiRun(
       try {
         await child.waitForExit()
       } catch (error: unknown) {
-        throw new Error(`subagent-pi: failed to terminate Pi child: ${error instanceof Error ? error.message : String(error)}`)
+        throw new Error(`subagent-pi-plus: failed to terminate Pi child: ${error instanceof Error ? error.message : String(error)}`)
       }
       await child.done
     } else {
@@ -145,7 +145,7 @@ export async function startPiRun(
   const runAbort = new AbortController()
   const requestCancel = (): void => {
     if (runAbort.signal.aborted) return
-    runAbort.abort(new Error('subagent-pi: run cancelled locally'))
+    runAbort.abort(new Error('subagent-pi-plus: run cancelled locally'))
     void wire.command({ type: 'abort' }).catch(() => {})
   }
   const onAbort = (): void => { requestCancel() }
@@ -259,5 +259,5 @@ function createSettleTracker(): {
 function abortReason(signal: AbortSignal): Error {
   return signal.reason instanceof Error
     ? signal.reason
-    : new Error(`subagent-pi: run aborted: ${String(signal.reason)}`)
+    : new Error(`subagent-pi-plus: run aborted: ${String(signal.reason)}`)
 }

@@ -3,7 +3,7 @@ description: "Fork 自官方 @deepseek-ai/dsh-subagent-codex：让 Pi 在 DeepSe
 kind: "package-bundle"
 ---
 
-# dsh-subagent-pi
+# dsh-subagent-pi-plus
 
 [English](README.md) | 中文
 
@@ -13,7 +13,7 @@ kind: "package-bundle"
 
 [`dsh-subagent-codex-plus`](https://github.com/february2015/dsh-subagent-codex-plus) 是本插件的**姊妹插件**：两者都是官方 `@deepseek-ai/dsh-subagent-codex` 的个人 fork，在其上叠加了同一套真网关层——直连、排队/插入连续对话、中间过程实时透出、持久绑定与图片透传。二者唯一的区别是直连对象——`dsh-subagent-codex-plus` 直连 **Codex**，本插件直连 **Pi**；架构完全相同，功能、命令与文档一一对应：
 
-| | `dsh-subagent-codex-plus` | `dsh-subagent-pi`（本插件） |
+| | `dsh-subagent-codex-plus` | `dsh-subagent-pi-plus`（本插件） |
 |---|---|---|
 | 直连对象 | Codex | Pi |
 | 绑定命令 | `/codex-lock` | `/pi-lock` |

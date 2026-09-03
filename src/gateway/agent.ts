@@ -15,7 +15,7 @@
  * resolved to local files (Q3) and re-encoded to Pi base64 at command time.
  * Visual understanding is handled by the hosts' `ocgw-vision` skill.
  *
- * @module dsh-subagent-pi/gateway/agent
+ * @module dsh-subagent-pi-plus/gateway/agent
  */
 
 import type { Context } from '@deepseek-ai/cordis'

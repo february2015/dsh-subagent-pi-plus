@@ -6,7 +6,7 @@
  * It appears automatically whenever the queue is non-empty and hides when it
  * drains.
  *
- * @module dsh-subagent-pi/client/queue-panel
+ * @module dsh-subagent-pi-plus/client/queue-panel
  */
 
 import { useCallback, useEffect, useState } from 'react'

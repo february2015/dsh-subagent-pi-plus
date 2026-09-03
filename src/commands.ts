@@ -4,7 +4,7 @@
  * Commands render through the official `conversation.chat.commandview`
  * slot, keyed by command name.
  *
- * @module dsh-subagent-pi/commands
+ * @module dsh-subagent-pi-plus/commands
  */
 
 import type { CommandDefinition, CommandInvocation, CommandResult } from '@deepseek-ai/dsh-commands'

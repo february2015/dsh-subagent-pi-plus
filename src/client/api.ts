@@ -3,7 +3,7 @@
  * `/api/pi-plus/*`. Plain `fetch`; the host webserver's authority checks
  * gate the `/api` prefix, so a remote or untrusted origin cannot reach it.
  *
- * @module dsh-subagent-pi/client/api
+ * @module dsh-subagent-pi-plus/client/api
  */
 
 import type {

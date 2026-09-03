@@ -9,7 +9,7 @@
  * Route registration follows the dsh-pet pattern: plain `WebRoute`s on the
  * host webserver; the connection plugin's authority checks gate `/api/*`.
  *
- * @module dsh-subagent-pi/gateway/ui
+ * @module dsh-subagent-pi-plus/gateway/ui
  */
 
 import type { IncomingMessage, ServerResponse } from 'node:http'

@@ -5,7 +5,7 @@
  * session ids, detach, and interrupt. Queue management (reorder / insert /
  * delete / edit) lives in the queue window above the composer instead.
  *
- * @module dsh-subagent-pi/client/control-panel
+ * @module dsh-subagent-pi-plus/client/control-panel
  */
 
 import { useCallback, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'

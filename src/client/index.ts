@@ -5,7 +5,7 @@
  * layer. State flows from the host through same-origin `/api/pi-plus/*`
  * endpoints; the client never talks to Pi directly.
  *
- * @module dsh-subagent-pi/client
+ * @module dsh-subagent-pi-plus/client
  */
 
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
