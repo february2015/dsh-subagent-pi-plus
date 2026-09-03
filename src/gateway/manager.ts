@@ -13,6 +13,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session'
 import { attachGateway, isGatewayAgent, type AttachedGateway } from './attach.ts'
 import { debugLog } from './debug.ts'
 import type { GatewayEventForwarderOptions } from './events.ts'
+import type { PiGatewayWatchdogOptions } from './gateway.ts'
 import type { GatewayBinding } from './binding.ts'
 import { GatewayBindingStore } from './binding.ts'
 
@@ -27,6 +28,8 @@ export interface GatewayManagerOptions {
   readonly agentOptions?: Record<string, unknown>
   /** Pi → dsh session event forwarding policy (R1-A1/A2). */
   readonly eventForwarder?: GatewayEventForwarderOptions
+  /** Streaming watchdog knobs for every attached gateway (absent = defaults). */
+  readonly watchdog?: PiGatewayWatchdogOptions
 }
 
 /** Build the `pi --mode rpc` argv for one durable session. */
@@ -95,6 +98,7 @@ export class GatewayManager {
       ...this.options.env === undefined ? {} : { env: this.options.env },
       ...this.options.agentOptions === undefined ? {} : { agentOptions: this.options.agentOptions as never },
       ...this.options.eventForwarder === undefined ? {} : { eventForwarder: this.options.eventForwarder },
+      ...this.options.watchdog === undefined ? {} : { watchdog: this.options.watchdog },
     })
     // The manager may have raced another attach for the same Pi session; the
     // store's 1:1 invariant is the final arbiter.
@@ -156,6 +160,7 @@ export class GatewayManager {
       ...this.options.env === undefined ? {} : { env: this.options.env },
       ...this.options.agentOptions === undefined ? {} : { agentOptions: this.options.agentOptions as never },
       ...this.options.eventForwarder === undefined ? {} : { eventForwarder: this.options.eventForwarder },
+      ...this.options.watchdog === undefined ? {} : { watchdog: this.options.watchdog },
     })
     this.attached.set(sessionId, attached)
   }

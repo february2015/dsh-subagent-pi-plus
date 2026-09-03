@@ -56,6 +56,12 @@ export interface Config {
   gatewaySessionDir?: string
   /** Forward Pi intermediate events into the dsh session log (R1-A1), default true. */
   gatewayEventForwarding?: boolean
+  /** Abort a gateway run that emits no event for this long (ms). Default 5 min. */
+  gatewayWatchdogIdleMs?: number
+  /** Abort a single gateway turn that streams past this wall-clock duration (ms). Default 20 min. */
+  gatewayWatchdogMaxTurnMs?: number
+  /** After a watchdog abort, force-settle the turn if Pi still hasn't settled within this grace (ms). Default 60 s. */
+  gatewayWatchdogAbortGraceMs?: number
 }
 
 export const Config: z<Config> = z.object({
@@ -67,6 +73,9 @@ export const Config: z<Config> = z.object({
   gatewayBindingFile: z.string().min(1),
   gatewaySessionDir: z.string().min(1),
   gatewayEventForwarding: z.boolean().default(true),
+  gatewayWatchdogIdleMs: z.number().min(1_000).max(3_600_000),
+  gatewayWatchdogMaxTurnMs: z.number().min(10_000).max(3_600_000_000),
+  gatewayWatchdogAbortGraceMs: z.number().min(1_000).max(3_600_000),
 })
 
 type ResolvedConfig = Omit<
@@ -76,6 +85,9 @@ type ResolvedConfig = Omit<
   | 'gatewayBindingFile'
   | 'gatewaySessionDir'
   | 'gatewayEventForwarding'
+  | 'gatewayWatchdogIdleMs'
+  | 'gatewayWatchdogMaxTurnMs'
+  | 'gatewayWatchdogAbortGraceMs'
 > & Pick<Config, 'model'>
 
 class PiProvider implements SubagentProvider {
@@ -182,6 +194,17 @@ function installGateway(ctx: Context, config: Config): void {
     eventForwarder: {
       enabled: config.gatewayEventForwarding ?? true,
     },
+    ...(config.gatewayWatchdogIdleMs === undefined
+      && config.gatewayWatchdogMaxTurnMs === undefined
+      && config.gatewayWatchdogAbortGraceMs === undefined)
+      ? {}
+      : {
+          watchdog: {
+            ...config.gatewayWatchdogIdleMs === undefined ? {} : { idleMs: config.gatewayWatchdogIdleMs },
+            ...config.gatewayWatchdogMaxTurnMs === undefined ? {} : { maxTurnMs: config.gatewayWatchdogMaxTurnMs },
+            ...config.gatewayWatchdogAbortGraceMs === undefined ? {} : { abortGraceMs: config.gatewayWatchdogAbortGraceMs },
+          },
+        },
   })
   const commands = ctx.get('commands')
   if (commands !== undefined) {

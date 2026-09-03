@@ -36,6 +36,31 @@ export type PiGatewayPhase = 'stopped' | 'starting' | 'ready' | 'failed'
 /** Whether Pi currently has an active agent run. */
 export type PiGatewayTurnState = 'idle' | 'running'
 
+/**
+ * Streaming watchdog knobs (defaults tuned for a single long turn).
+ *
+ * A Pi run exposes no wall-clock limit of its own: a degenerate model loop
+ * keeps streaming `message_update` events forever, so neither the dsh turn
+ * nor the gateway's `running` projection ever settles — the run looks
+ * "stuck running / cannot be stopped". The watchdog aborts such runs and,
+ * if Pi still fails to settle afterwards, force-closes the turn locally so
+ * every status surface (pi-plus window, dingo cards) unsticks.
+ */
+export interface PiGatewayWatchdogOptions {
+  /** Abort when a running turn emits no event for this long (ms). Default 5 min. */
+  readonly idleMs?: number
+  /** Abort a single turn that keeps streaming past this wall-clock duration (ms). Default 20 min. */
+  readonly maxTurnMs?: number
+  /** After a watchdog abort, force-settle the turn if Pi still hasn't settled within this grace (ms). Default 60 s. */
+  readonly abortGraceMs?: number
+}
+
+const DEFAULT_WATCHDOG_IDLE_MS = 5 * 60_000
+const DEFAULT_WATCHDOG_MAX_TURN_MS = 20 * 60_000
+const DEFAULT_WATCHDOG_ABORT_GRACE_MS = 60_000
+/** Watchdog check cadence. */
+const WATCHDOG_TICK_MS = 5_000
+
 export interface PiGatewayOptions {
   /** Working directory for the Pi child and its session. */
   readonly cwd: string
@@ -48,6 +73,8 @@ export interface PiGatewayOptions {
   readonly env?: Record<string, string>
   /** Diagnostic sink for child stderr lines. */
   readonly onStderr?: (line: string) => void
+  /** Streaming watchdog; absent = built-in defaults. */
+  readonly watchdog?: PiGatewayWatchdogOptions
 }
 
 export interface SubmitOutcome {
@@ -127,6 +154,14 @@ export class PiGateway extends EventEmitter {
   private sessionIdValue: string | undefined
   private exitPromise: Promise<number | null> | undefined
   private readonly queued: PiQueuedItem[] = []
+  private readonly watchdog?: PiGatewayWatchdogOptions
+  /** Wall-clock start of the current run (reset on settle). */
+  private runningSince: number | undefined
+  /** Last moment any Pi event was observed (idle watchdog). */
+  private lastEventAt = 0
+  /** A watchdog/exited run was force-closed locally; swallow Pi's own turn_end. */
+  private forceSettled = false
+  private watchdogTimer: ReturnType<typeof setInterval> | undefined
 
   constructor(options: PiGatewayOptions) {
     super()
@@ -134,6 +169,7 @@ export class PiGateway extends EventEmitter {
     this.argv = options.argv ?? ['pi', '--mode', 'rpc']
     this.env = options.env
     this.onStderr = options.onStderr
+    this.watchdog = options.watchdog
   }
 
   /** Current lifecycle phase. */
@@ -192,6 +228,12 @@ export class PiGateway extends EventEmitter {
         const line = `[pi-gateway] child exited code=${code} signal=${signal}\n`
         this.onStderr?.(`[pi-gateway] child exited code=${code} signal=${signal}`)
         debugLog(line)
+        // A dead child can never settle a running turn; close it locally as
+        // aborted so the dsh session turn and every status card unstick
+        // instead of staying "running" forever.
+        if (this.turnStateValue === 'running') {
+          this.forceCloseTurn('pi 子进程意外退出，已中止当前轮次')
+        }
       })
 
       const stdout = child.stdout
@@ -210,6 +252,7 @@ export class PiGateway extends EventEmitter {
       }
       this.sessionIdValue = sessionId
       this.setPhase('ready')
+      this.startWatchdog()
       return sessionId
     } catch (error) {
       this.setPhase('failed')
@@ -243,6 +286,9 @@ export class PiGateway extends EventEmitter {
       streamingBehavior: 'followUp',
       ...images.length === 0 ? {} : { images },
     })
+    // A fresh user-initiated run starts a new turn: a previous watchdog
+    // force-settle must not swallow the events of this one.
+    this.forceSettled = false
     this.setTurnState('running')
     return { kind: 'turn', id: clientUserMessageId }
   }
@@ -272,6 +318,7 @@ export class PiGateway extends EventEmitter {
       streamingBehavior: 'followUp',
       ...images.length === 0 ? {} : { images },
     })
+    this.forceSettled = false
     this.setTurnState('running')
     return text
   }
@@ -342,6 +389,7 @@ export class PiGateway extends EventEmitter {
       message: next.text,
       streamingBehavior: 'followUp',
     }).then(() => {
+      this.forceSettled = false
       this.setTurnState('running')
       this.emit('notification', { type: 'local_queue_update', queued: this.queued.length })
     }).catch((error: unknown) => {
@@ -354,6 +402,7 @@ export class PiGateway extends EventEmitter {
    * call from any phase.
    */
   async dispose(): Promise<void> {
+    this.stopWatchdog()
     const child = this.child
     const wire = this.wire
     this.child = undefined
@@ -375,15 +424,25 @@ export class PiGateway extends EventEmitter {
   }
 
   private handleEvent(event: PiEvent): void {
+    this.lastEventAt = Date.now()
     switch (event.type) {
       case 'turn_start':
+        // A real Pi turn invalidates any earlier watchdog force-settle.
+        this.forceSettled = false
+        this.runningSince ??= Date.now()
         this.setTurnState('running')
         break
       case 'agent_settled':
+        this.runningSince = undefined
         this.setTurnState('idle')
         // Pi drains its own steering/follow-up queues before settling, so
         // `agent_settled` is the one moment this gateway owns the wire.
         this.drainPending()
+        break
+      case 'turn_end':
+        // The turn was force-closed locally (watchdog abort grace elapsed or
+        // the child died); Pi's own turn_end would duplicate the durable end.
+        if (this.forceSettled) return
         break
       default:
         break
@@ -394,6 +453,73 @@ export class PiGateway extends EventEmitter {
   private fail(error: Error): void {
     this.setPhase('failed')
     this.emit('error', error)
+  }
+
+  /**
+   * Streaming watchdog: bounds one run so a degenerate model loop cannot hold
+   * the gateway "running" (and every status surface) indefinitely. Checks run
+   * only while a turn is active.
+   */
+  private startWatchdog(): void {
+    this.stopWatchdog()
+    const timer = setInterval(() => this.watchdogTick(), WATCHDOG_TICK_MS)
+    timer.unref?.()
+    this.watchdogTimer = timer
+  }
+
+  private stopWatchdog(): void {
+    if (this.watchdogTimer !== undefined) {
+      clearInterval(this.watchdogTimer)
+      this.watchdogTimer = undefined
+    }
+  }
+
+  private watchdogTick(): void {
+    if (this.phaseValue !== 'ready' || this.turnStateValue !== 'running') return
+    const now = Date.now()
+    const idleMs = this.watchdog?.idleMs ?? DEFAULT_WATCHDOG_IDLE_MS
+    const maxTurnMs = this.watchdog?.maxTurnMs ?? DEFAULT_WATCHDOG_MAX_TURN_MS
+    // No events at all while running → the run hung (upstream stall, wire loss).
+    if (this.lastEventAt > 0 && now - this.lastEventAt > idleMs) {
+      this.watchdogAbort('Pi 长时间无输出，已自动中止当前轮次')
+      return
+    }
+    // Continuous streaming past the per-turn cap → degenerate loop (the
+    // "keeps going forever" case with constant output).
+    if (this.runningSince !== undefined && now - this.runningSince > maxTurnMs) {
+      this.watchdogAbort(`Pi 单轮执行超过 ${Math.round(maxTurnMs / 60_000)} 分钟，已自动中止`)
+    }
+  }
+
+  /** Abort the active run; if Pi still doesn't settle, force-close the turn. */
+  private watchdogAbort(reason: string): void {
+    if (this.phaseValue !== 'ready') return
+    const graceMs = this.watchdog?.abortGraceMs ?? DEFAULT_WATCHDOG_ABORT_GRACE_MS
+    this.emit('notification', { type: 'watchdog_abort', message: reason })
+    void this.wireAsReady().command({ type: 'abort' }).catch(() => {})
+    const timer = setTimeout(() => {
+      if (this.phaseValue !== 'ready' || this.turnStateValue !== 'running') return
+      this.forceCloseTurn(reason)
+    }, graceMs)
+    timer.unref?.()
+  }
+
+  /**
+   * Close the active turn locally and reset the running projection. Used when
+   * Pi can no longer settle it (watchdog abort ignored, child exited): the dsh
+   * session turn and every running indicator must not stay stuck forever.
+   * Pi's own later `turn_end` is swallowed via {@link forceSettled}.
+   */
+  private forceCloseTurn(reason: string): void {
+    if (this.turnStateValue !== 'running') return
+    this.handleEvent({
+      type: 'turn_end',
+      message: { stopReason: 'aborted', content: [] },
+    } as PiEvent)
+    this.forceSettled = true
+    this.runningSince = undefined
+    this.setTurnState('idle')
+    this.emit('notification', { type: 'watchdog_forced_settle', message: reason })
   }
 
   private setPhase(phase: PiGatewayPhase): void {

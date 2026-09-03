@@ -24,7 +24,7 @@ import { createScope } from '@deepseek-ai/dsh-scope'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { GatewayAgent } from './agent.ts'
 import type { GatewayEventForwarderOptions } from './events.ts'
-import { PiGateway, type PiGatewayOptions } from './gateway.ts'
+import { PiGateway, type PiGatewayOptions, type PiGatewayWatchdogOptions } from './gateway.ts'
 
 import { GatewayImageResolver } from './images.ts'
 
@@ -53,6 +53,8 @@ export interface AttachGatewayOptions {
   readonly agentOptions?: AgentOptions
   /** Pi → dsh session event forwarding policy (R1-A1/A2). */
   readonly eventForwarder?: GatewayEventForwarderOptions
+  /** Streaming watchdog knobs (absent = gateway defaults). */
+  readonly watchdog?: PiGatewayWatchdogOptions
 }
 
 /** Narrow structural view of the registries' private stores. */
@@ -97,6 +99,7 @@ export async function attachGateway(
     cwd: options.cwd,
     ...options.argv === undefined ? {} : { argv: options.argv },
     ...options.env === undefined ? {} : { env: options.env },
+    ...options.watchdog === undefined ? {} : { watchdog: options.watchdog },
     onStderr: (line) => {
       // Pi child diagnostics must not die with the child; route them through
       // the host logger so an unexpected exit is explainable.
@@ -146,14 +149,22 @@ export async function attachGateway(
     threadId,
     detach: async () => {
       detachAgent()
+      await gateway.dispose()
+      await imageResolver.dispose()
       // The session entry was installed by the superseded loop creation and
       // stays live through the attachment (the UI keeps rendering it). Retire
       // it through the entry's own teardown so `session/disposed` fires: the
       // persistence coordinator releases its live-owner claim on that event,
       // which the host's ordinary resume path requires on the next prompt.
-      detachSessionEntry(ctx.get('sessions'), sessionId)
-      await gateway.dispose()
-      await imageResolver.dispose()
+      //
+      // Retirement is deferred to a macrotask: the slash-command executor
+      // appends `command/done` to this session immediately after the detach
+      // handler settles (same microtask turn — e.g. `/pi-unlock`). If the
+      // entry were already retired, that final append would be unpublished
+      // and unpersisted, stranding the command card in its running state
+      // (`command/run` without `command/done`) forever. Deferring lets the
+      // final event publish on the live entry before the claim release.
+      void setTimeout(() => { detachSessionEntry(ctx.get('sessions'), sessionId) }, 0)
     },
   }
 }
