@@ -1,13 +1,13 @@
 {
   "name": "dsh-subagent-pi-plus",
   "description": "One-shot Pi subagent provider and true-gateway over the Pi RPC protocol",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/february2015/dsh-subagent-pi.git"
+    "url": "git+https://github.com/february2015/dsh-subagent-pi-plus.git"
   },
   "type": "module",
   "main": "lib/index.js",

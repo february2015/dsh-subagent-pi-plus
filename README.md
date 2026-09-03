@@ -9,8 +9,8 @@ English | [中文](README.zh.md)
 
 > **Package-name notice**: the npm name \`dsh-subagent-pi\` belongs to an **earlier
 > third-party project** and is **not** this plugin. This plugin is published on npm as
-> **\`dsh-subagent-pi-plus\`** (\`npm install dsh-subagent-pi-plus\`), while the GitHub
-> repo keeps its original name \`february2015/dsh-subagent-pi\`.
+> **\`dsh-subagent-pi-plus\`** (\`npm install dsh-subagent-pi-plus\`) and its home repository is
+> [**\`february2015/dsh-subagent-pi-plus\`**](https://github.com/february2015/dsh-subagent-pi-plus).
 
 
 **This plugin is forked from the official `@deepseek-ai/dsh-subagent-codex` plugin** (via the personal `dsh-subagent-codex-plus` project), switching the direct-connected agent from Codex to Pi — making **Pi a first-class citizen inside DeepSeek Harness (dsh)**.

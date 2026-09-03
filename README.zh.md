@@ -9,7 +9,7 @@ kind: "package-bundle"
 
 > **包名说明**：npm 上的 \`dsh-subagent-pi\` 属于**更早注册的第三方项目**，与本插件无关。
 > 本插件在 npm 以 **\`dsh-subagent-pi-plus\`** 发布（\`npm install dsh-subagent-pi-plus\`），
-> GitHub 仓库名保持 \`february2015/dsh-subagent-pi\` 不变。
+> 代码仓库为 [**\`february2015/dsh-subagent-pi-plus\`**](https://github.com/february2015/dsh-subagent-pi-plus)。
 
 
 **本插件基于官方 `@deepseek-ai/dsh-subagent-codex` 插件 fork 而来**（经由个人项目 `dsh-subagent-codex-plus`），把直连对象从 Codex 换成 Pi，让 **Pi 在 DeepSeek Harness（dsh）里成为一等公民**。
